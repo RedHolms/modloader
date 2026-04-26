@@ -34,14 +34,6 @@ static bool MatchWildcards(const std::string& string, const Container& patterns)
 
 
 /*
- *  Profile::~Profile
- */
-Loader::Profile::~Profile()
-{
-    parent.RemoveReferencesToProfile(*this);
-}
-
-/*
  *  Profile::Clear
  *      Clears this object
  */
@@ -256,7 +248,7 @@ void Loader::Profile::SetPriority(std::string name, int priority)
     if(priority == default_priority)
         mods_priority.erase(name);
     else
-        mods_priority[name] = std::max(std::min(priority, 100), 0); // clamp to 0-100
+        mods_priority[name] = std::max(std::min(priority, this->parent.GetPriorityLimit()), 0); // clamp to 0-priorityLimit
 }
 
 /*
