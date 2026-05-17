@@ -1,0 +1,104 @@
+name: Build
+
+on:
+  push:
+    branches: [master, develop]
+    tags: ["v*.*.*"]
+  pull_request:
+    paths-ignore: ["**/*.md", "doc/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install premake5
+        run: |
+          winget install -e --id Premake.Premake.5.Beta --accept-source-agreements --accept-package-agreements --disable-interactivity
+          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          echo "$((Get-Command premake5).Path | Split-Path -Parent)" >> $env:GITHUB_PATH
+
+      - name: Install v141_xp toolset
+        shell: cmd
+        run: |
+          "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\setup.exe" modify ^
+            --passive --norestart ^
+            --installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise" ^
+            --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 ^
+            --add Microsoft.VisualStudio.Component.WinXP
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Add pdbcopy to PATH
+        run: echo "${env:ProgramFiles(x86)}\Windows Kits\10\Debuggers\x86" >> $env:GITHUB_PATH
+
+      - name: Build
+        env:
+          CL: /MP
+        run: |
+          if ("${{ github.ref }}" -like "refs/tags/v*") {
+            premake5 --file=release.lua prepare --toolset=vs2022 --final-release
+          } else {
+            premake5 --file=release.lua prepare --toolset=vs2022
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: modloader-${{ github.sha }}
+          path: release
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: modloader-${{ github.sha }}
+          path: dist/
+
+      - name: Package zip files
+        run: |
+          (cd dist/binaries && zip -r ../modloader.zip .)
+          (cd dist/symbols && zip -r ../pdb-symbols.zip .)
+
+      - name: Prepare release notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 <<'PY'
+          import os, re, sys
+          tag = os.environ["TAG"]
+          lines = open("doc/CHANGELOG.md").readlines()
+          i = next((i for i, l in enumerate(lines) if l.startswith(tag + " ")), None)
+          if i is None:
+              sys.exit(f"No changelog for {tag} in CHANGELOG.md")
+          j = next((j for j in range(i + 1, len(lines)) if re.match(r"^v\d+\.\d+", lines[j])), len(lines))
+          open("release-body.md", "w").writelines(lines[i:j])
+          PY
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Mod Loader ${{ github.ref_name }}
+          body_path: release-body.md
+          files: |
+            dist/modloader.zip
+            dist/pdb-symbols.zip
+          fail_on_unmatched_files: true
