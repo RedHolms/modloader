@@ -29,7 +29,7 @@ extern "C" {
 /* Version */
 #define MODLOADER_VERSION_MAJOR         0
 #define MODLOADER_VERSION_MINOR         3
-#define MODLOADER_VERSION_REVISION      9
+#define MODLOADER_VERSION_REVISION      10
 #ifdef MODLOADER_FINAL_RELEASE
 #define MODLOADER_VERSION_ISDEV         0
 #else
