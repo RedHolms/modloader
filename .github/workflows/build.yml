@@ -20,14 +20,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install winget
-        uses: Cyberboss/install-winget@v1
-
-      - name: Install premake5
-        run: |
-          winget install -e --id Premake.Premake.5.Beta --accept-source-agreements --accept-package-agreements --disable-interactivity
-          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
-          echo "$((Get-Command premake5).Path | Split-Path -Parent)" >> $env:GITHUB_PATH
+      - uses: abel0b/setup-premake@v2.4
+        with:
+          version: "5.0.0-beta8"
 
       - name: Install v141_xp toolset
         shell: cmd
