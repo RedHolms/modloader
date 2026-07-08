@@ -31,44 +31,37 @@ jobs:
         run: |
           $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
           if (-not (Test-Path $vswhere)) {
-            Write-Error "vswhere.exe not found at $vswhere. Can't locate Visual Studio."
+            Write-Error "no vswhere.exe"
             exit 1
           }
 
-          # Look for any Visual Studio installation
           $instPath = & $vswhere -latest -products * -property installationPath | Select-Object -First 1
           if (-not $instPath) {
-            Write-Error "No Visual Studio installation found."
+            Write-Error "no vstudio"
             exit 1
           }
 
-          # Check if required component(s) are already installed
           $hasV141 = & $vswhere -products * -requires Microsoft.VisualStudio.Component.VC.v141.x86.x64 -property installationPath
           $hasWinXP = & $vswhere -products * -requires Microsoft.VisualStudio.Component.WinXP -property installationPath
 
           if ($hasV141 -and $hasWinXP) {
-            Write-Host "v141 and WinXP components already present. Skipping modification."
             exit 0
           }
 
-          # Run the installer using the discovered installation path; produce a log for debugging
           $setup = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\setup.exe'
           if (-not (Test-Path $setup)) {
             Write-Error "setup.exe not found at $setup"
             exit 1
           }
 
-          $log = "C:\vs_install_modify.log"
-          Write-Host "Running setup.exe modify on $instPath (log: $log)"
-          & $setup modify --passive --wait --norestart --installPath "$instPath" `
+          & $setup modify --passive --norestart --installPath "$instPath" `
             --add Microsoft.VisualStudio.Component.VC.v141.x86.x64 `
-            --add Microsoft.VisualStudio.Component.WinXP --log $log
+            --add Microsoft.VisualStudio.Component.WinXP
           $exit = $LASTEXITCODE
           if ($exit -ne 0) {
-            Write-Error "Visual Studio modify failed with exit code $exit. See $log for details."
+            Write-Error "xp toolkit installation failed"
             exit $exit
           }
-          Write-Host "Visual Studio modified successfully."
 
       - uses: microsoft/setup-msbuild@v2
 
