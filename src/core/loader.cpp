@@ -235,18 +235,19 @@ void Loader::Startup()
         }
 
         // Register exported methods and vars
-        modloader_t::has_game_started= false;
-        modloader_t::has_game_loaded = false;
-        modloader_t::gamepath        = this->gamePath.data();
+        modloader_t::has_game_started       = false;
+        modloader_t::has_game_loaded        = false;
+        modloader_t::gamepath               = this->gamePath.data();
         //modloader_t::cachepath       = this->cachePath.data();
-        modloader_t::commonappdata   = this->commonAppDataPath.data();
-        modloader_t::localappdata    = this->localAppDataPath.data();
-        modloader_t::Log             = this->Log;
-        modloader_t::vLog            = this->vLog;
-        modloader_t::Error           = this->Error;
-        modloader_t::CreateSharedData= this->CreateSharedData;
-        modloader_t::DeleteSharedData= this->DeleteSharedData;
-        modloader_t::FindSharedData  = this->FindSharedData;
+        modloader_t::commonappdata          = this->commonAppDataPath.data();
+        modloader_t::localappdata           = this->localAppDataPath.data();
+        modloader_t::Log                    = this->Log;
+        modloader_t::vLog                   = this->vLog;
+        modloader_t::Error                  = this->Error;
+        modloader_t::CreateSharedData       = this->CreateSharedData;
+        modloader_t::DeleteSharedData       = this->DeleteSharedData;
+        modloader_t::FindSharedData         = this->FindSharedData;
+        modloader_t::AddCustomModsFolder    = this->AddCustomModsFolder;
 
         // Initialise sub systems
         this->ParseCommandLine();   // Parse command line arguments

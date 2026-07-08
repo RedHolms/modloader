@@ -151,6 +151,11 @@ typedef void (*modloader_fvLog)(const char* msg, va_list va);
  */
 typedef void (*modloader_fError)(const char* errmsg, ...);
 
+/*
+ * AddCustomModsFolder
+ *      Add custom mods root folder. Such folders work identical to default 'modloader/'
+ */
+typedef void (*modloader_fAddCustomModsFolder)(const char* folder_path);
 
 /* ---- Interface ---- */
 typedef struct modloader_t
@@ -174,6 +179,7 @@ typedef struct modloader_t
     modloader_fCreateSharedData     CreateSharedData;
     modloader_fDeleteSharedData     DeleteSharedData;
     modloader_fFindSharedData       FindSharedData;
+    modloader_fAddCustomModsFolder  AddCustomModsFolder;
 
 } modloader_t;
 

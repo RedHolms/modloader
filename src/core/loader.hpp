@@ -237,12 +237,12 @@ class Loader : public modloader_t
 
             public:
                 // Initializer
-                ModInformation(std::string name, FolderInformation& parent, uint64_t id)
-                    : name(NormalizePath(std::move(name))), parent(parent), status(Status::Unchanged), ignored(false)
+                ModInformation(std::string name, std::string path, FolderInformation& parent, uint64_t id)
+                    : name(NormalizePath(std::move(name))), path(path), parent(parent), status(Status::Unchanged), ignored(false)
                 {
                     this->id = id;
                     this->priority = default_priority;
-                    modloader::MakeSureStringIsDirectory(this->path = parent.GetPath() + this->name);
+                    modloader::MakeSureStringIsDirectory(this->path);
                 }
                 
                 // Scans this mod for new, updated or removed files
@@ -390,16 +390,18 @@ class Loader : public modloader_t
                 typedef std::map<std::string, ModInformation>       ModInformationList;
 
             public:
-                FolderInformation(const std::string& path, FolderInformation* parent = nullptr)
-                    : path(path + cNormalizedSlash), parent(parent), status(Status::Unchanged)
-                {}
+                FolderInformation(const std::string& default_path, FolderInformation* parent = nullptr)
+                    : parent(parent), status(Status::Unchanged)
+                {
+                    paths.push_back(default_path);
+                }
                 
                 // Config
                 void SaveConfigForINI();
                 void LoadConfigFromINI();
 
                 // Adders
-                ModInformation& AddMod(const std::string& name);
+                ModInformation& AddMod(const std::string& name, const std::string& path);
                 
                 // Get my mods sorted by priority
                 ref_list<ModInformation> GetMods();
@@ -413,7 +415,7 @@ class Loader : public modloader_t
                 static void Update(ModInformation& mod);    // ^
                 
                 // Gets the path to this modfolder (relative to gamedir, normalized)
-                const std::string& GetPath() { return path; }
+                const std::vector<std::string>& GetPaths() { return paths; }
 
                 int GetPriorityLimit() const { return this->priority_limit; }
                 void SetPriorityLimit(int value) { this->priority_limit = std::max(value, 1); }
@@ -448,7 +450,7 @@ class Loader : public modloader_t
                 Status status;                      // Folder status
                 
             private:
-                std::string path;                   // Folder relative to game dir (modloader/)
+                std::vector<std::string> paths;     // Paths of folders containing mods. All of them are normalized and relative to the game folder
                 FolderInformation* parent;          // Parent folder
                 
                 ModInformationList       mods;      // All mods on this folder
@@ -573,11 +575,14 @@ class Loader : public modloader_t
         static modloader_shdata_t* FindSharedData(const char* name);
         static void DeleteSharedData(modloader_shdata_t* data);
 
+        // Custom mods folders
+        static void AddCustomModsFolder(const char* folder_path);
+
         // Unique ids function
         uint64_t PickUniqueModId()  { return ++currentModId; }
         uint64_t PickUniqueFileId() { return ++currentFileId; }
         
-        
+
         // Scan and update (install) the mods
         void ScanAndUpdate();
         void UpdateFromJournal(const Journal& journal);

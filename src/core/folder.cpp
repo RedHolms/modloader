@@ -193,11 +193,13 @@ bool Loader::FolderInformation::IsUsingAnonymousProfile() const
  *  FolderInformation::AddMod
  *      Adds or finds mod at folder @name (non-normalized) into this FolderInformation
  */
-auto Loader::FolderInformation::AddMod(const std::string& name) -> ModInformation&
+auto Loader::FolderInformation::AddMod(const std::string& name, const std::string& path) -> ModInformation&
 {
+    Log("\nAdding mod %s from folder %s", name.c_str(), path.c_str());
+
     auto ipair = mods.emplace(std::piecewise_construct,
                         std::forward_as_tuple(NormalizePath(name)),
-                        std::forward_as_tuple(name, *this, loader.PickUniqueModId()));
+                        std::forward_as_tuple(name, path, *this, loader.PickUniqueModId()));
     
     return ipair.first->second;
 }
@@ -245,23 +247,36 @@ auto Loader::FolderInformation::GetModsByName() -> ref_list<ModInformation>
  */
 void Loader::FolderInformation::Scan()
 {
-    ::scoped_gdir xdir(this->path.c_str());
-    Log("\n\nScanning mods at \"%s\"...", this->path.c_str());
-
+    bool master_folder = true;
     bool fine = true;
-    
-    // > Status here is Status::Unchanged
-    // Mark all current mods as removed
-    MarkStatus(this->mods, Status::Removed);
 
-    // Walk on this folder to find mods
-    if(this->Profile().IsIgnoring() == false)
+    for (auto const& path : paths)
     {
-        fine = FilesWalk("", "*.*", false, [this](FileWalkInfo & file)
+        ::scoped_gdir xdir(path.c_str());
+        Log("\n\nScanning mods at \"%s\"...", path.c_str());
+    
+        // > Status here is Status::Unchanged
+        // Mark all current mods as removed
+        MarkStatus(this->mods, Status::Removed);
+
+        // Walk on this folder to find mods
+        if(this->Profile().IsIgnoring() == false)
         {
-            if(file.is_dir) this->AddMod(file.filename).Scan();
-            return true;
-        });
+            fine = fine && FilesWalk("", "*.*", false, [this, master_folder, path](FileWalkInfo & file)
+            {
+                if (file.is_dir)
+                {
+                    // Add a prefix to all mods from custom folders
+                    std::string mod_name = master_folder ? file.filename :
+                        path + '\\' + file.filename;
+
+                    this->AddMod(mod_name, file.filepath).Scan();
+                }
+                return true;
+            });
+        }
+
+        master_folder = false;
     }
     
     // Find the underlying status of this folder
@@ -275,27 +290,34 @@ void Loader::FolderInformation::Scan()
  */
 void Loader::FolderInformation::Scan(const Journal& journal)
 {
-    ::scoped_gdir xdir(this->path.c_str());
-
-    if(this->Profile().IsIgnoring() == false)
+    for (auto const& path : paths)
     {
-        for(auto& change : journal)
+        ::scoped_gdir xdir(path.c_str());
+
+        if(this->Profile().IsIgnoring() == false)
         {
-            if(change.second == Status::Removed)
+            for(auto& change : journal)
             {
-                auto it = this->mods.find(change.first);
-                if(it != this->mods.end()) it->second.status = Status::Removed;
-            }
-            else if(change.second == Status::Added
-                 || change.second == Status::Updated)
-            {
-                if(IsDirectoryA(change.first.c_str()))  // the journal might contain unrelated files...
-                    this->AddMod(change.first).Scan();
+                if(change.second == Status::Removed)
+                {
+                    auto it = this->mods.find(change.first);
+                    if(it != this->mods.end()) it->second.status = Status::Removed;
+                }
+                else if(change.second == Status::Added
+                     || change.second == Status::Updated)
+                {
+                    if(IsDirectoryA(change.first.c_str()))  // the journal might contain unrelated files...
+                    {
+                        Log("\nSCANIN FROM JOURNAL: %s\n", change.first.c_str());
+                        // Will work because only changes in the master folder are watched (I assume?)
+                        this->AddMod(change.first, NormalizePath(paths[0]) + '\\' + change.first).Scan();
+                    }
+                }
             }
         }
-    }
 
-    UpdateStatus(*this, this->mods, true);
+        UpdateStatus(*this, this->mods, true);
+    }
 }
 
 /*
@@ -308,7 +330,7 @@ void Loader::FolderInformation::Update()
     if(this->status != Status::Unchanged)
     {
         Updating xup;
-        Log("\nUpdating mods for \"%s\"...", this->path.c_str());
+        Log("\nUpdating mods...");
 
         auto mods = this->GetModsByPriority();
 
@@ -348,7 +370,7 @@ void Loader::FolderInformation::Update(ModInformation& mod)
  */
 void Loader::FolderInformation::LoadConfigFromINI()
 {
-    ::scoped_gdir xdir(this->path.c_str());
+    ::scoped_gdir xdir(this->paths[0].c_str());
     modloader_ini ini;
     CopyFileA(loader.folderConfigDefault.c_str(), loader.folderConfigFilename.c_str(), TRUE);
     
@@ -413,7 +435,7 @@ void Loader::FolderInformation::LoadConfigFromINI()
  */
 void Loader::FolderInformation::SaveConfigForINI()
 {
-    ::scoped_gdir xdir(this->path.c_str());
+    ::scoped_gdir xdir(this->paths[0].c_str());
     modloader_ini ini;
 
     // Save current profile

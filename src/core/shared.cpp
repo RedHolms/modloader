@@ -35,3 +35,8 @@ modloader_shdata_t* Loader::FindSharedData(const char* name)
     if(it != loader.shdata.end()) return &it->second;
     return nullptr;
 }
+
+void Loader::AddCustomModsFolder(const char* folder_path)
+{
+
+}
