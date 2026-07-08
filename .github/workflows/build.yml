@@ -52,9 +52,9 @@ jobs:
           }
 
           # Run the installer using the discovered installation path; produce a log for debugging
-          $setup = Join-Path $instPath 'Installer\setup.exe'
+          $setup = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\setup.exe'
           if (-not (Test-Path $setup)) {
-            Write-Error "setup.exe not found under $instPath\Installer"
+            Write-Error "setup.exe not found at $setup"
             exit 1
           }
 
