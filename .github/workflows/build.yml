@@ -20,6 +20,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install winget
+        uses: Cyberboss/install-winget@v1
+
       - name: Install premake5
         run: |
           winget install -e --id Premake.Premake.5.Beta --accept-source-agreements --accept-package-agreements --disable-interactivity
