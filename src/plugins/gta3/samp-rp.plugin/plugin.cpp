@@ -1,7 +1,5 @@
 /*
- *  Mod Loader Plugin Base File
- *  Use this (copy-pasting) to help you in starting a plugin project
- * 
+ *  Mod Loader Plugin for SAMP-RP
  */
 #include <modloader/modloader.hpp>
 
@@ -31,8 +29,8 @@ REGISTER_ML_PLUGIN(::plugin);
  */
 const ThePlugin::info& ThePlugin::GetInfo()
 {
-    static const char* extable[] = { "dff", "txd", "fxp", 0 };
-    static const info xinfo      = { "Plugin Name", "Version", "Author", -1, extable };
+    static const char* extable[] = { 0 };
+    static const info xinfo      = { "SAMP-RP Bridge", "1.0.0", "RedHolms", -1, extable };
     return xinfo;
 }
 
@@ -46,6 +44,7 @@ const ThePlugin::info& ThePlugin::GetInfo()
  */
 bool ThePlugin::OnStartup()
 {
+    this->loader->AddCustomModsFolder("SAMP-RP\\mods");
     return true;
 }
 
