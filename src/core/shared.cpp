@@ -38,5 +38,5 @@ modloader_shdata_t* Loader::FindSharedData(const char* name)
 
 void Loader::AddCustomModsFolder(const char* folder_path)
 {
-
+    loader.mods.AddPath(folder_path);
 }

@@ -413,9 +413,10 @@ class Loader : public modloader_t
                 void Scan(const Journal&);
                 void Update();                              // After this call some ModInformation may have been deleted
                 static void Update(ModInformation& mod);    // ^
-                
+
                 // Gets the path to this modfolder (relative to gamedir, normalized)
                 const std::vector<std::string>& GetPaths() { return paths; }
+                void AddPath(const std::string& path) { paths.push_back(path); }
 
                 int GetPriorityLimit() const { return this->priority_limit; }
                 void SetPriorityLimit(int value) { this->priority_limit = std::max(value, 1); }
