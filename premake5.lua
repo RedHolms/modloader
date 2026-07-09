@@ -294,7 +294,8 @@ solution "modloader"
         "std.bank",
         "std.stream",
         "std.asi",
-        "std.data"
+        "std.data",
+        "samp-rp.plugin"
     }
 
     project "build_gta3"
